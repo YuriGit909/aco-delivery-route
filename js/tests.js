@@ -1,5 +1,5 @@
 import { createRng } from './rng.js';
-import { distanceMatrix, pheromoneMatrix, routeLength } from './aco.js';
+import { distanceMatrix, pheromoneMatrix, routeLength, rouletteSelect, constructRoute, computeProbabilities } from './aco.js';
 
 // ---------- Mini framework de testes ----------
 const saida = document.getElementById('resultados');
@@ -98,3 +98,73 @@ check('Média próxima de 0,5 (distribuição uniforme)',
 
 // ---------- Resumo ----------
 secao(`Resumo: ${passou} passaram, ${falhou} falharam`);
+
+// ---------- Probabilidades (seção 6.2) ----------
+secao('Etapa 2 – Probabilidades a partir de A (τ=1, α=1, β=2)');
+
+const tau1 = pheromoneMatrix(4, 1);
+const pA = computeProbabilities(A, [true, false, false, false], tau1, d, 1, 2);
+const probDe = (lista, j) => lista.find(c => c.j === j).p;
+
+check('w(A,B) = 1/9', approx(pA.find(c => c.j === B).w, 1 / 9));
+check('w(A,C) = 1/25', approx(pA.find(c => c.j === C).w, 1 / 25));
+check('w(A,D) = 1/16', approx(pA.find(c => c.j === D).w, 1 / 16));
+check('p(A,B) = 400/769', approx(probDe(pA, B), 400 / 769), `obtido ${probDe(pA, B)}`);
+check('p(A,C) = 144/769', approx(probDe(pA, C), 144 / 769), `obtido ${probDe(pA, C)}`);
+check('p(A,D) = 225/769', approx(probDe(pA, D), 225 / 769), `obtido ${probDe(pA, D)}`);
+check('Soma = 1', approx(pA.reduce((s, c) => s + c.p, 0), 1));
+check('3 candidatos (nenhum excluído)', pA.length === 3);
+
+secao('Etapa 2 – Probabilidades a partir de B (A e B visitados)');
+
+const pB = computeProbabilities(B, [true, true, false, false], tau1, d, 1, 2);
+check('Apenas C e D são candidatos', pB.length === 2 && pB.every(c => c.j === C || c.j === D));
+check('p(B,C) = 25/41', approx(probDe(pB, C), 25 / 41), `obtido ${probDe(pB, C)}`);
+check('p(B,D) = 16/41', approx(probDe(pB, D), 16 / 41), `obtido ${probDe(pB, D)}`);
+
+secao('Etapa 2 – Casos especiais');
+
+const tauVariado = pheromoneMatrix(4, 1);
+tauVariado[A][B] = tauVariado[B][A] = 7; // feromônio diferente não deve importar com α=0
+const p00 = computeProbabilities(A, [true, false, false, false], tauVariado, d, 0, 0);
+check('α=0, β=0 → probabilidades iguais (1/3)', p00.every(c => approx(c.p, 1 / 3)));
+
+const pUnico = computeProbabilities(C, [true, true, true, false], tau1, d, 1, 2);
+check('Um único candidato → p = 1', pUnico.length === 1 && approx(pUnico[0].p, 1));
+
+// ---------- Roleta com valores forçados ----------
+secao('Etapa 2 – Roleta com r forçado');
+
+const rngFixo = valor => () => valor; // "gerador" que sempre devolve o mesmo número
+check('r = 0,1 → B', rouletteSelect(pA, rngFixo(0.1)).escolhido === B);
+check('r = 0,6 → C', rouletteSelect(pA, rngFixo(0.6)).escolhido === C);
+check('r = 0,9 → D', rouletteSelect(pA, rngFixo(0.9)).escolhido === D);
+check('r = 0,9999999999 → D', rouletteSelect(pA, rngFixo(0.9999999999)).escolhido === D);
+
+// ---------- Frequências da roleta ----------
+secao('Etapa 2 – Frequência dos sorteios (10.000 amostras)');
+
+const rngFreq = createRng(123);
+const contagem = { [B]: 0, [C]: 0, [D]: 0 };
+for (let k = 0; k < 10000; k++) contagem[rouletteSelect(pA, rngFreq).escolhido]++;
+for (const j of [B, C, D]) {
+  const freq = contagem[j] / 10000;
+  check(`Frequência de ${vertices[j].id} ≈ ${probDe(pA, j).toFixed(4)}`,
+    Math.abs(freq - probDe(pA, j)) < 0.02, `obtido ${freq.toFixed(4)}`);
+}
+
+// ---------- Rotas construídas ----------
+secao('Etapa 2 – Validade de 1.000 rotas construídas');
+
+const rngRotas = createRng(7);
+let todasValidas = true, comprimentosOk = true;
+for (let k = 0; k < 1000; k++) {
+  const { rota, comprimento } = constructRoute(A, tau1, d, 1, 2, rngRotas);
+  const meio = rota.slice(1, -1);
+  const valida = rota.length === 5 && rota[0] === A && rota[4] === A &&
+                 new Set(meio).size === 3 && !meio.includes(A);
+  if (!valida) todasValidas = false;
+  if (![14, 16, 18].some(v => approx(comprimento, v))) comprimentosOk = false;
+}
+check('Todas começam e terminam em A, sem repetição', todasValidas);
+check('Todos os comprimentos ∈ {14, 16, 18}', comprimentosOk);
