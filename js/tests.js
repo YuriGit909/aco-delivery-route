@@ -1,5 +1,5 @@
 import { createRng } from './rng.js';
-import { distanceMatrix, pheromoneMatrix, routeLength, rouletteSelect, constructRoute, computeProbabilities } from './aco.js';
+import { distanceMatrix, pheromoneMatrix, routeLength, rouletteSelect, constructRoute, computeProbabilities, updatePheromones, TAU_MIN } from './aco.js';
 
 // ---------- Mini framework de testes ----------
 const saida = document.getElementById('resultados');
@@ -168,3 +168,62 @@ for (let k = 0; k < 1000; k++) {
 }
 check('Todas começam e terminam em A, sem repetição', todasValidas);
 check('Todos os comprimentos ∈ {14, 16, 18}', comprimentosOk);
+
+// ---------- Evaporação e depósito (seção 6.3) ----------
+const rotaForcada = [A, B, C, D, A];
+const formiga = { rota: rotaForcada, comprimento: routeLength(rotaForcada, d) };
+const perimetro = [[A, B], [B, C], [C, D], [A, D]];
+const diagonais = [[A, C], [B, D]];
+const logDe = (log, i, j) => log.find(e => e.i === Math.min(i, j) && e.j === Math.max(i, j));
+
+secao('Etapa 3 – Uma formiga, 1ª iteração (τ₀=1, ρ=0,5, Q=14)');
+
+const tauInicial = pheromoneMatrix(4, 1);
+const it1 = updatePheromones(tauInicial, [formiga], 0.5, 14);
+
+check('Todas as 6 arestas = 0,5 após evaporação',
+  it1.log.length === 6 && it1.log.every(e => approx(e.aposEvaporacao, 0.5)));
+for (const [i, j] of perimetro)
+  check(`${vertices[i].id}${vertices[j].id} = 1,5`, approx(it1.tau[i][j], 1.5), `obtido ${it1.tau[i][j]}`);
+for (const [i, j] of diagonais)
+  check(`${vertices[i].id}${vertices[j].id} = 0,5`, approx(it1.tau[i][j], 0.5), `obtido ${it1.tau[i][j]}`);
+
+const eAB = logDe(it1.log, A, B), eAC = logDe(it1.log, A, C);
+check('Log AB: anterior 1; após evaporação 0,5; depósito 1; final 1,5',
+  approx(eAB.anterior, 1) && approx(eAB.aposEvaporacao, 0.5) &&
+  approx(eAB.deposito, 1) && approx(eAB.final, 1.5));
+check('Log AC: anterior 1; após evaporação 0,5; depósito 0; final 0,5',
+  approx(eAC.anterior, 1) && approx(eAC.aposEvaporacao, 0.5) &&
+  approx(eAC.deposito, 0) && approx(eAC.final, 0.5));
+
+check('Matriz simétrica', it1.tau.every((linha, i) => linha.every((v, j) => v === it1.tau[j][i])));
+check('Diagonal sem feromônio', it1.tau.every((linha, i) => linha[i] === 0));
+check('Matriz original não foi alterada', tauInicial[A][B] === 1);
+
+secao('Etapa 3 – Uma formiga, 2ª iteração');
+
+const it2 = updatePheromones(it1.tau, [formiga], 0.5, 14);
+for (const [i, j] of perimetro)
+  check(`${vertices[i].id}${vertices[j].id} = 1,75`, approx(it2.tau[i][j], 1.75), `obtido ${it2.tau[i][j]}`);
+for (const [i, j] of diagonais)
+  check(`${vertices[i].id}${vertices[j].id} = 0,25`, approx(it2.tau[i][j], 0.25), `obtido ${it2.tau[i][j]}`);
+
+secao('Etapa 3 – Duas formigas na mesma rota');
+
+const dupla = updatePheromones(pheromoneMatrix(4, 1), [formiga, formiga], 0.5, 14);
+for (const [i, j] of perimetro)
+  check(`${vertices[i].id}${vertices[j].id} = 2,5`, approx(dupla.tau[i][j], 2.5), `obtido ${dupla.tau[i][j]}`);
+for (const [i, j] of diagonais)
+  check(`${vertices[i].id}${vertices[j].id} = 0,5`, approx(dupla.tau[i][j], 0.5), `obtido ${dupla.tau[i][j]}`);
+
+// ---------- Casos limite (seção 6.5) ----------
+secao('Etapa 3 – ρ = 0% e piso numérico');
+
+const semEvap = updatePheromones(pheromoneMatrix(4, 1), [formiga], 0, 14);
+check('ρ=0: nenhuma aresta reduzida pela evaporação',
+  semEvap.log.every(e => e.aposEvaporacao === e.anterior));
+check('ρ=0: diagonais continuam 1', approx(semEvap.tau[A][C], 1) && approx(semEvap.tau[B][D], 1));
+
+const quase = pheromoneMatrix(4, TAU_MIN);
+const comPiso = updatePheromones(quase, [], 0.9, 14); // sem formigas → só evaporação
+check('Piso de 10⁻¹² aplicado', comPiso.log.every(e => e.final === TAU_MIN && e.pisoAplicado));

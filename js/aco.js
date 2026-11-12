@@ -1,3 +1,5 @@
+export const TAU_MIN = 1e-12
+
 export function distanceMatrix(vertices){
     const n = vertices.length
     const d = Array.from({length: n}, () => new Array(n).fill(0))
@@ -17,6 +19,33 @@ export function pheromoneMatrix(n, tau){
         t[i][i] = 0
     }
     return t
+}
+
+export function updatePheromones(tau, resultados, rho, Q) {
+    const n = tau.length
+    const deposito = Array.from({ length: n }, () => new Array(n).fill(0))
+    for (const { rota, comprimento } of resultados) {
+        const contribuicao = Q / comprimento
+        for (let k = 0; k < rota.length - 1; k++) {
+            const i = Math.min(rota[k], rota[k + 1])
+            const j = Math.max(rota[k], rota[k + 1])
+            deposito[i][j] += contribuicao
+        }
+    }
+    const novo = Array.from({ length: n }, () => new Array(n).fill(0))
+    const log = []
+    for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+            const anterior = tau[i][j]
+            const aposEvaporacao = (1 - rho) * anterior
+            const depositoTotal = deposito[i][j]
+            const semPiso = aposEvaporacao + depositoTotal
+            const final = Math.max(semPiso, TAU_MIN)
+            novo[i][j] = novo[j][i] = final
+            log.push({ i, j, anterior, aposEvaporacao, deposito: depositoTotal, final, pisoAplicado: semPiso < TAU_MIN })
+        }
+    }
+    return { tau: novo, log }
 }
 
 export function routeLength(route, d){
