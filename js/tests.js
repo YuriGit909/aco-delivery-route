@@ -1,5 +1,6 @@
 import { createRng } from './rng.js';
 import { distanceMatrix, pheromoneMatrix, routeLength, rouletteSelect, constructRoute, computeProbabilities, updatePheromones, TAU_MIN } from './aco.js';
+import { Simulation } from './simulation.js'
 
 // ---------- Mini framework de testes ----------
 const saida = document.getElementById('resultados');
@@ -227,3 +228,54 @@ check('ρ=0: diagonais continuam 1', approx(semEvap.tau[A][C], 1) && approx(semE
 const quase = pheromoneMatrix(4, TAU_MIN);
 const comPiso = updatePheromones(quase, [], 0.9, 14); // sem formigas → só evaporação
 check('Piso de 10⁻¹² aplicado', comPiso.log.every(e => e.final === TAU_MIN && e.pisoAplicado));
+
+  // ---------- Execução completa (seção 6.4) ----------
+  const params64 = {
+    vertices, deposito: A, formigas: 10, iteracoes: 30,
+    alpha: 1, beta: 2, rho: 0.5, tau0: 1, Q: 14, semente: 42,
+  };
+  const executarTudo = sim => { while (!sim.concluida) sim.passo(); return sim; };
+  const resumo = sim => JSON.stringify(sim.historico.map(r => r.rotas));
+  secao('Etapa 4 – Estado inicial (iteração 0)');
+
+  const simInicial = new Simulation(params64);
+  check('Iteração 0', simInicial.iteracao === 0);
+  check('Melhor global "ainda não calculada" (null, não zero)', simInicial.melhorGlobal === null);
+  check('τ = 1 em todas as arestas', simInicial.tau.every((l, i) => l.every((v, j) => i === j || v === 1)));
+
+  secao('Etapa 4 – Execução completa (10 formigas, 30 iterações, semente 42)');
+
+  const sim1 = executarTudo(new Simulation(params64));
+  check('30 registros', sim1.historico.length === 30);
+  check('Iterações numeradas de 1 a 30', sim1.historico.every((r, k) => r.iteracao === k + 1));
+  check('Todas as rotas com comprimento ∈ {14, 16, 18}',
+    sim1.historico.every(r => r.rotas.every(f => [14, 16, 18].some(v => approx(f.comprimento, v)))));
+  check('Melhor global nunca aumenta',
+    sim1.historico.every((r, k) => k === 0 ||
+      r.melhorGlobal.comprimento <= sim1.historico[k - 1].melhorGlobal.comprimento));
+  check('Cada iteração tem a construção detalhada de uma rota (3 passos)',
+    sim1.historico.every(r => r.construcaoDetalhada.length === 3));
+
+  const mg = sim1.melhorGlobal;
+  check(`Resultado: ${mg.rota.map(i => vertices[i].id).join(' → ')} = ${mg.comprimento} ` +
+        `(encontrada na iteração ${mg.iteracao})`, true);
+
+  secao('Etapa 4 – Reprodutibilidade');
+
+  const sim2 = executarTudo(new Simulation(params64));
+  check('Mesmos dados e semente → mesmo histórico', resumo(sim1) === resumo(sim2));
+
+  const simPausada = new Simulation(params64);
+  for (let k = 0; k < 12; k++) simPausada.passo();
+  executarTudo(simPausada);
+  check('Pausar e retomar → mesmo histórico', resumo(sim1) === resumo(simPausada));
+
+  sim1.reiniciar();
+  check('Reiniciar limpa o histórico e restaura τ₀',
+    sim1.historico.length === 0 && sim1.iteracao === 0 && sim1.melhorGlobal === null &&
+    sim1.tau[A][B] === 1);
+  executarTudo(sim1);
+  check('Após reiniciar → mesmo histórico', resumo(sim1) === resumo(sim2));
+
+  const simOutra = executarTudo(new Simulation({ ...params64, semente: 43 }));
+  check('Semente diferente → histórico diferente', resumo(simOutra) !== resumo(sim2));
