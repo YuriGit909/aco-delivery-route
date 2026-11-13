@@ -1,6 +1,6 @@
-import { createRng } from './rng.js';
-import { distanceMatrix, pheromoneMatrix, routeLength, rouletteSelect, constructRoute, computeProbabilities, updatePheromones, TAU_MIN } from './aco.js';
-import { Simulation } from './simulation.js'
+import { criarRng } from './rng.js';
+import { matrizDistancias, matrizFeromonio, comprimentoRota, roletaSelecao, construirRota, calcularProbabilidades, atualizarFeromonio, TAU_MIN } from './aco.js';
+import { Simulacao } from './simulation.js'
 import { validarEntrada } from './validation.js'
 
 // ---------- Mini framework de testes ----------
@@ -33,7 +33,7 @@ const vertices = [
   { id: 'D', x: 0, y: 4 },
 ];
 const [A, B, C, D] = [0, 1, 2, 3];
-const d = distanceMatrix(vertices);
+const d = matrizDistancias(vertices);
 
 // ---------- Distâncias ----------
 secao('Etapa 1 – Distâncias');
@@ -57,14 +57,14 @@ const rotas = [
 ];
 for (const [rota, valor] of rotas) {
   const nome = rota.map(i => vertices[i].id).join(' → ');
-  const L = routeLength(rota, d);
+  const L = comprimentoRota(rota, d);
   check(`${nome} = ${valor}`, approx(L, valor), `obtido ${L}`);
 }
 
 // ---------- Feromônio inicial ----------
 secao('Etapa 1 – Matriz de feromônio');
 
-const tau = pheromoneMatrix(4, 1);
+const tau = matrizFeromonio(4, 1);
 let foraDiagonalOk = true, diagonalOk = true;
 for (let i = 0; i < 4; i++) {
   for (let j = 0; j < 4; j++) {
@@ -79,7 +79,7 @@ check('Diagonal sem feromônio', diagonalOk);
 secao('Etapa 1 – Gerador com semente');
 
 const gerar = (semente, qtd) => {
-  const rng = createRng(semente);
+  const rng = criarRng(semente);
   return Array.from({ length: qtd }, () => rng());
 };
 
@@ -104,8 +104,8 @@ secao(`Resumo: ${passou} passaram, ${falhou} falharam`);
 // ---------- Probabilidades (seção 6.2) ----------
 secao('Etapa 2 – Probabilidades a partir de A (τ=1, α=1, β=2)');
 
-const tau1 = pheromoneMatrix(4, 1);
-const pA = computeProbabilities(A, [true, false, false, false], tau1, d, 1, 2);
+const tau1 = matrizFeromonio(4, 1);
+const pA = calcularProbabilidades(A, [true, false, false, false], tau1, d, 1, 2);
 const probDe = (lista, j) => lista.find(c => c.j === j).p;
 
 check('w(A,B) = 1/9', approx(pA.find(c => c.j === B).w, 1 / 9));
@@ -119,36 +119,36 @@ check('3 candidatos (nenhum excluído)', pA.length === 3);
 
 secao('Etapa 2 – Probabilidades a partir de B (A e B visitados)');
 
-const pB = computeProbabilities(B, [true, true, false, false], tau1, d, 1, 2);
+const pB = calcularProbabilidades(B, [true, true, false, false], tau1, d, 1, 2);
 check('Apenas C e D são candidatos', pB.length === 2 && pB.every(c => c.j === C || c.j === D));
 check('p(B,C) = 25/41', approx(probDe(pB, C), 25 / 41), `obtido ${probDe(pB, C)}`);
 check('p(B,D) = 16/41', approx(probDe(pB, D), 16 / 41), `obtido ${probDe(pB, D)}`);
 
 secao('Etapa 2 – Casos especiais');
 
-const tauVariado = pheromoneMatrix(4, 1);
+const tauVariado = matrizFeromonio(4, 1);
 tauVariado[A][B] = tauVariado[B][A] = 7; // feromônio diferente não deve importar com α=0
-const p00 = computeProbabilities(A, [true, false, false, false], tauVariado, d, 0, 0);
+const p00 = calcularProbabilidades(A, [true, false, false, false], tauVariado, d, 0, 0);
 check('α=0, β=0 → probabilidades iguais (1/3)', p00.every(c => approx(c.p, 1 / 3)));
 
-const pUnico = computeProbabilities(C, [true, true, true, false], tau1, d, 1, 2);
+const pUnico = calcularProbabilidades(C, [true, true, true, false], tau1, d, 1, 2);
 check('Um único candidato → p = 1', pUnico.length === 1 && approx(pUnico[0].p, 1));
 
 // ---------- Roleta com valores forçados ----------
 secao('Etapa 2 – Roleta com r forçado');
 
 const rngFixo = valor => () => valor; // "gerador" que sempre devolve o mesmo número
-check('r = 0,1 → B', rouletteSelect(pA, rngFixo(0.1)).escolhido === B);
-check('r = 0,6 → C', rouletteSelect(pA, rngFixo(0.6)).escolhido === C);
-check('r = 0,9 → D', rouletteSelect(pA, rngFixo(0.9)).escolhido === D);
-check('r = 0,9999999999 → D', rouletteSelect(pA, rngFixo(0.9999999999)).escolhido === D);
+check('r = 0,1 → B', roletaSelecao(pA, rngFixo(0.1)).escolhido === B);
+check('r = 0,6 → C', roletaSelecao(pA, rngFixo(0.6)).escolhido === C);
+check('r = 0,9 → D', roletaSelecao(pA, rngFixo(0.9)).escolhido === D);
+check('r = 0,9999999999 → D', roletaSelecao(pA, rngFixo(0.9999999999)).escolhido === D);
 
 // ---------- Frequências da roleta ----------
 secao('Etapa 2 – Frequência dos sorteios (10.000 amostras)');
 
-const rngFreq = createRng(123);
+const rngFreq = criarRng(123);
 const contagem = { [B]: 0, [C]: 0, [D]: 0 };
-for (let k = 0; k < 10000; k++) contagem[rouletteSelect(pA, rngFreq).escolhido]++;
+for (let k = 0; k < 10000; k++) contagem[roletaSelecao(pA, rngFreq).escolhido]++;
 for (const j of [B, C, D]) {
   const freq = contagem[j] / 10000;
   check(`Frequência de ${vertices[j].id} ≈ ${probDe(pA, j).toFixed(4)}`,
@@ -158,10 +158,10 @@ for (const j of [B, C, D]) {
 // ---------- Rotas construídas ----------
 secao('Etapa 2 – Validade de 1.000 rotas construídas');
 
-const rngRotas = createRng(7);
+const rngRotas = criarRng(7);
 let todasValidas = true, comprimentosOk = true;
 for (let k = 0; k < 1000; k++) {
-  const { rota, comprimento } = constructRoute(A, tau1, d, 1, 2, rngRotas);
+  const { rota, comprimento } = construirRota(A, tau1, d, 1, 2, rngRotas);
   const meio = rota.slice(1, -1);
   const valida = rota.length === 5 && rota[0] === A && rota[4] === A &&
                  new Set(meio).size === 3 && !meio.includes(A);
@@ -173,15 +173,15 @@ check('Todos os comprimentos ∈ {14, 16, 18}', comprimentosOk);
 
 // ---------- Evaporação e depósito (seção 6.3) ----------
 const rotaForcada = [A, B, C, D, A];
-const formiga = { rota: rotaForcada, comprimento: routeLength(rotaForcada, d) };
+const formiga = { rota: rotaForcada, comprimento: comprimentoRota(rotaForcada, d) };
 const perimetro = [[A, B], [B, C], [C, D], [A, D]];
 const diagonais = [[A, C], [B, D]];
 const logDe = (log, i, j) => log.find(e => e.i === Math.min(i, j) && e.j === Math.max(i, j));
 
 secao('Etapa 3 – Uma formiga, 1ª iteração (τ₀=1, ρ=0,5, Q=14)');
 
-const tauInicial = pheromoneMatrix(4, 1);
-const it1 = updatePheromones(tauInicial, [formiga], 0.5, 14);
+const tauInicial = matrizFeromonio(4, 1);
+const it1 = atualizarFeromonio(tauInicial, [formiga], 0.5, 14);
 
 check('Todas as 6 arestas = 0,5 após evaporação',
   it1.log.length === 6 && it1.log.every(e => approx(e.aposEvaporacao, 0.5)));
@@ -204,7 +204,7 @@ check('Matriz original não foi alterada', tauInicial[A][B] === 1);
 
 secao('Etapa 3 – Uma formiga, 2ª iteração');
 
-const it2 = updatePheromones(it1.tau, [formiga], 0.5, 14);
+const it2 = atualizarFeromonio(it1.tau, [formiga], 0.5, 14);
 for (const [i, j] of perimetro)
   check(`${vertices[i].id}${vertices[j].id} = 1,75`, approx(it2.tau[i][j], 1.75), `obtido ${it2.tau[i][j]}`);
 for (const [i, j] of diagonais)
@@ -212,7 +212,7 @@ for (const [i, j] of diagonais)
 
 secao('Etapa 3 – Duas formigas na mesma rota');
 
-const dupla = updatePheromones(pheromoneMatrix(4, 1), [formiga, formiga], 0.5, 14);
+const dupla = atualizarFeromonio(matrizFeromonio(4, 1), [formiga, formiga], 0.5, 14);
 for (const [i, j] of perimetro)
   check(`${vertices[i].id}${vertices[j].id} = 2,5`, approx(dupla.tau[i][j], 2.5), `obtido ${dupla.tau[i][j]}`);
 for (const [i, j] of diagonais)
@@ -221,13 +221,13 @@ for (const [i, j] of diagonais)
 // ---------- Casos limite (seção 6.5) ----------
 secao('Etapa 3 – ρ = 0% e piso numérico');
 
-const semEvap = updatePheromones(pheromoneMatrix(4, 1), [formiga], 0, 14);
+const semEvap = atualizarFeromonio(matrizFeromonio(4, 1), [formiga], 0, 14);
 check('ρ=0: nenhuma aresta reduzida pela evaporação',
   semEvap.log.every(e => e.aposEvaporacao === e.anterior));
 check('ρ=0: diagonais continuam 1', approx(semEvap.tau[A][C], 1) && approx(semEvap.tau[B][D], 1));
 
-const quase = pheromoneMatrix(4, TAU_MIN);
-const comPiso = updatePheromones(quase, [], 0.9, 14); // sem formigas → só evaporação
+const quase = matrizFeromonio(4, TAU_MIN);
+const comPiso = atualizarFeromonio(quase, [], 0.9, 14); // sem formigas → só evaporação
 check('Piso de 10⁻¹² aplicado', comPiso.log.every(e => e.final === TAU_MIN && e.pisoAplicado));
 
   // ---------- Execução completa (seção 6.4) ----------
@@ -239,14 +239,14 @@ check('Piso de 10⁻¹² aplicado', comPiso.log.every(e => e.final === TAU_MIN &
   const resumo = sim => JSON.stringify(sim.historico.map(r => r.rotas));
   secao('Etapa 4 – Estado inicial (iteração 0)');
 
-  const simInicial = new Simulation(params64);
+  const simInicial = new Simulacao(params64);
   check('Iteração 0', simInicial.iteracao === 0);
   check('Melhor global "ainda não calculada" (null, não zero)', simInicial.melhorGlobal === null);
   check('τ = 1 em todas as arestas', simInicial.tau.every((l, i) => l.every((v, j) => i === j || v === 1)));
 
   secao('Etapa 4 – Execução completa (10 formigas, 30 iterações, semente 42)');
 
-  const sim1 = executarTudo(new Simulation(params64));
+  const sim1 = executarTudo(new Simulacao(params64));
   check('30 registros', sim1.historico.length === 30);
   check('Iterações numeradas de 1 a 30', sim1.historico.every((r, k) => r.iteracao === k + 1));
   check('Todas as rotas com comprimento ∈ {14, 16, 18}',
@@ -263,10 +263,10 @@ check('Piso de 10⁻¹² aplicado', comPiso.log.every(e => e.final === TAU_MIN &
 
   secao('Etapa 4 – Reprodutibilidade');
 
-  const sim2 = executarTudo(new Simulation(params64));
+  const sim2 = executarTudo(new Simulacao(params64));
   check('Mesmos dados e semente → mesmo histórico', resumo(sim1) === resumo(sim2));
 
-  const simPausada = new Simulation(params64);
+  const simPausada = new Simulacao(params64);
   for (let k = 0; k < 12; k++) simPausada.passo();
   executarTudo(simPausada);
   check('Pausar e retomar → mesmo histórico', resumo(sim1) === resumo(simPausada));
@@ -278,7 +278,7 @@ check('Piso de 10⁻¹² aplicado', comPiso.log.every(e => e.final === TAU_MIN &
   executarTudo(sim1);
   check('Após reiniciar → mesmo histórico', resumo(sim1) === resumo(sim2));
 
-  const simOutra = executarTudo(new Simulation({ ...params64, semente: 43 }));
+  const simOutra = executarTudo(new Simulacao({ ...params64, semente: 43 }));
   check('Semente diferente → histórico diferente', resumo(simOutra) !== resumo(sim2));
 
 // ---------- Validação (seção 6.5) ----------

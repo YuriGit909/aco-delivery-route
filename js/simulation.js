@@ -1,16 +1,16 @@
-import { createRng } from './rng.js';
-import { distanceMatrix, pheromoneMatrix, constructRoute, updatePheromones } from './aco.js';
+import { criarRng } from './rng.js';
+import { matrizDistancias, matrizFeromonio, construirRota, atualizarFeromonio } from './aco.js';
 
-export class Simulation {
+export class Simulacao {
     constructor(params) {
         this.params = params;
-        this.d = distanceMatrix(params.vertices);
+        this.d = matrizDistancias(params.vertices);
         this.reiniciar();
     }
 
     reiniciar() {
-        this.tau = pheromoneMatrix(this.d.length, this.params.tau0);
-        this.rng = createRng(this.params.semente);
+        this.tau = matrizFeromonio(this.d.length, this.params.tau0);
+        this.rng = criarRng(this.params.semente);
         this.iteracao = 0;
         this.historico = [];
         this.melhorGlobal = null; // null = "ainda não calculada"
@@ -27,7 +27,7 @@ export class Simulation {
     const { deposito, formigas, alpha, beta, rho, Q } = this.params;
     const resultados = [];
     for (let k = 0; k < formigas; k++) {
-        resultados.push(constructRoute(deposito, this.tau, this.d, alpha, beta, this.rng));
+        resultados.push(construirRota(deposito, this.tau, this.d, alpha, beta, this.rng));
     }
     let idxMelhor = 0, soma = 0;
     resultados.forEach((r, k) => {
@@ -38,7 +38,7 @@ export class Simulation {
     if (!this.melhorGlobal || melhorIt.comprimento < this.melhorGlobal.comprimento) {
         this.melhorGlobal = { rota: melhorIt.rota, comprimento: melhorIt.comprimento, iteracao: this.iteracao + 1 };
     }
-    const { tau, log } = updatePheromones(this.tau, resultados, rho, Q);
+    const { tau, log } = atualizarFeromonio(this.tau, resultados, rho, Q);
     this.tau = tau;
     this.iteracao++;
     const registro = {

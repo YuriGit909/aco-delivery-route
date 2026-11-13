@@ -1,4 +1,4 @@
-export class Controller {
+export class Controlador {
     constructor(simulacao, aoAtualizar) {
         this.sim = simulacao;
         this.aoAtualizar = aoAtualizar;

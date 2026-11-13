@@ -1,6 +1,6 @@
 export const TAU_MIN = 1e-12
 
-export function distanceMatrix(vertices){
+export function matrizDistancias(vertices){
     const n = vertices.length
     const d = Array.from({length: n}, () => new Array(n).fill(0))
     for(let i = 0; i < n; i++){
@@ -13,7 +13,7 @@ export function distanceMatrix(vertices){
     return d
 }
 
-export function pheromoneMatrix(n, tau){
+export function matrizFeromonio(n, tau){
     const t = Array.from({length: n}, () => new Array(n).fill(tau))
     for(let i = 0; i < n; i++){
         t[i][i] = 0
@@ -21,7 +21,7 @@ export function pheromoneMatrix(n, tau){
     return t
 }
 
-export function updatePheromones(tau, resultados, rho, Q) {
+export function atualizarFeromonio(tau, resultados, rho, Q) {
     const n = tau.length
     const deposito = Array.from({ length: n }, () => new Array(n).fill(0))
     for (const { rota, comprimento } of resultados) {
@@ -48,7 +48,7 @@ export function updatePheromones(tau, resultados, rho, Q) {
     return { tau: novo, log }
 }
 
-export function routeLength(route, d){
+export function comprimentoRota(route, d){
     let L = 0
     for(let k = 0; k < route.length - 1; k++){
         L += d[route[k]][route[k + 1]]
@@ -56,7 +56,7 @@ export function routeLength(route, d){
     return L
 }
 
-export function computeProbabilities(atual, visitado, tau, d, alpha, beta) {
+export function calcularProbabilidades(atual, visitado, tau, d, alpha, beta) {
     const candidatos = [];
     let soma = 0;
     for (let j = 0; j < d.length; j++) {
@@ -75,7 +75,7 @@ export function computeProbabilities(atual, visitado, tau, d, alpha, beta) {
     return candidatos
 }
 
-export function rouletteSelect(candidatos, rng) {
+export function roletaSelecao(candidatos, rng) {
     const r = rng();
     let acumulado = 0;
     for (const c of candidatos) {
@@ -87,7 +87,7 @@ export function rouletteSelect(candidatos, rng) {
     return {escolhido: candidatos[candidatos.length - 1].j, r};
 }
 
-export function constructRoute(deposito, tau, d, alpha, beta, rng) {
+export function construirRota(deposito, tau, d, alpha, beta, rng) {
     const n = d.length
     const visitado = new Array(n).fill(false)
     const rota = [deposito]
@@ -95,13 +95,13 @@ export function constructRoute(deposito, tau, d, alpha, beta, rng) {
     visitado[deposito] = true
     let atual = deposito
     for (let passo = 0; passo < n - 1; passo++) {
-        const candidatos = computeProbabilities(atual, visitado, tau, d, alpha, beta)
-        const {escolhido, r} = rouletteSelect(candidatos, rng)
+        const candidatos = calcularProbabilidades(atual, visitado, tau, d, alpha, beta)
+        const {escolhido, r} = roletaSelecao(candidatos, rng)
         passos.push({atual, candidatos, r, escolhido})
         visitado[escolhido] = true;
         rota.push(escolhido)
         atual = escolhido
     }
     rota.push(deposito)
-    return {rota, comprimento: routeLength(rota, d), passos}
+    return {rota, comprimento: comprimentoRota(rota, d), passos}
 }

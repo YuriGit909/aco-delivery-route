@@ -1,5 +1,5 @@
-import { Simulation } from './simulation.js';
-import { Controller } from './controller.js';
+import { Simulacao } from './simulation.js';
+import { Controlador } from './controller.js';
 import { validarEntrada } from './validation.js';
 
 const $ = id => document.getElementById(id);
@@ -106,8 +106,8 @@ function aplicarConfiguracao() {
     if (!valido) {
         sim = ctrl = null;
     } else {
-        sim = new Simulation(params);
-        ctrl = new Controller(sim, atualizarTela);
+        sim = new Simulacao(params);
+        ctrl = new Controlador(sim, atualizarTela);
         ctrl.definirAtraso(Number($('velocidade').value));
         pendente = false;
     }

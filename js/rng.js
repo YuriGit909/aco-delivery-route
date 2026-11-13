@@ -1,4 +1,4 @@
-export function createRng(seed){
+export function criarRng(seed){
     let a = seed >>> 0
     return function () {
         a = (a + 0x6D2B79F5) | 0
