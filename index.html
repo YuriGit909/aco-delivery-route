@@ -1,12 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ACO Delivery Route</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
+
 <body>
-    
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Colônia de Formigas – Rota de Entregas</title>
+        <link rel="stylesheet" href="css/style.css">
+    </head>
+
+    <body>
+        <header>
+            <h1>Otimização de rota por Colônia de Formigas (Ant System)</h1>
+        </header>
+
+        <main>
+            <section id="painelConfig">
+                <fieldset>
+                    <legend>Vértices (4 a 12)</legend>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>x</th>
+                                <th>y</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaVertices"></tbody>
+                    </table>
+                    <button id="btnAdicionar" type="button">+ Adicionar vértice</button>
+                    <button id="btnInstanciaTeste" type="button">Carregar instância de teste</button>
+                    <label>Depósito <select id="deposito"></select></label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Parâmetros</legend>
+                    <label>Número de formigas (1–100) <input id="formigas" inputmode="numeric" value="10"></label>
+                    <label>Número de iterações (1–200) <input id="iteracoes" inputmode="numeric" value="30"></label>
+                    <label>Influência do feromônio α (0–5) <input id="alpha" inputmode="decimal" value="1"></label>
+                    <label>Influência da distância β (0–5) <input id="beta" inputmode="decimal" value="2"></label>
+                    <label>Taxa de evaporação ρ (0–90%) <input id="rho" inputmode="decimal" value="50"></label>
+                    <label>Feromônio inicial τ₀ (0,01–100) <input id="tau0" inputmode="decimal" value="1"></label>
+                    <label>Constante de depósito Q (0,01–10.000) <input id="Q" inputmode="decimal" value="100"></label>
+                    <label>Semente aleatória (inteiro) <input id="semente" inputmode="numeric" value="42"></label>
+                </fieldset>
+
+                <div id="avisoPendente" hidden>Configuração alterada: clique em <strong>Reiniciar</strong> para aplicar.
+                </div>
+                <ul id="listaErros"></ul>
+
+                <div id="controles">
+                    <button id="btnExecutar" type="button">Executar</button>
+                    <button id="btnPausar" type="button">Pausar</button>
+                    <button id="btnAvancar" type="button">Avançar uma iteração</button>
+                    <button id="btnReiniciar" type="button">Reiniciar</button>
+                    <label>Velocidade visual <input id="velocidade" type="range" min="0" max="1000" value="300"></label>
+                </div>
+            </section>
+
+            <section id="painelResultados">
+                <pre id="status"></pre>
+            </section>
+        </main>
+        <footer>
+            <a href="https://github.com/YuriGit909/aco-delivery-route" target="_blank">Acesso ao repositorio</a>
+        </footer>
+        <script type="module" src="js/main.js"></script>
+    </body>
+
+    </html>
 </body>
+
 </html>

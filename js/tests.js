@@ -1,6 +1,7 @@
 import { createRng } from './rng.js';
 import { distanceMatrix, pheromoneMatrix, routeLength, rouletteSelect, constructRoute, computeProbabilities, updatePheromones, TAU_MIN } from './aco.js';
 import { Simulation } from './simulation.js'
+import { validarEntrada } from './validation.js'
 
 // ---------- Mini framework de testes ----------
 const saida = document.getElementById('resultados');
@@ -279,3 +280,49 @@ check('Piso de 10⁻¹² aplicado', comPiso.log.every(e => e.final === TAU_MIN &
 
   const simOutra = executarTudo(new Simulation({ ...params64, semente: 43 }));
   check('Semente diferente → histórico diferente', resumo(simOutra) !== resumo(sim2));
+
+// ---------- Validação (seção 6.5) ----------
+secao('Etapa 5 – Validação de entradas');
+
+const entradaBase = () => ({
+  vertices: [
+    { id: 'A', x: '0', y: '0' }, { id: 'B', x: '3', y: '0' },
+    { id: 'C', x: '3', y: '4' }, { id: 'D', x: '0', y: '4' },
+  ],
+  depositoId: 'A', formigas: '10', iteracoes: '30', alpha: '1', beta: '2',
+  rhoPercentual: '50', tau0: '1', Q: '14', semente: '42',
+});
+const comAlteracao = alterar => { const e = entradaBase(); alterar(e); return validarEntrada(e); };
+const deveRejeitar = (nome, alterar) => {
+  const r = comAlteracao(alterar);
+  check(`Rejeita: ${nome}`, !r.valido && r.erros.length > 0, r.erros.join(' | '));
+};
+
+const base = validarEntrada(entradaBase());
+check('Entrada válida é aceita', base.valido, base.erros.join(' | '));
+check('ρ = 50% convertido para 0,5', base.valido && approx(base.params.rho, 0.5));
+check('Depósito convertido para índice 0', base.valido && base.params.deposito === 0);
+check('Aceita ρ = 0%', comAlteracao(e => (e.rhoPercentual = '0')).valido);
+
+deveRejeitar('coordenadas duplicadas', e => { e.vertices[1].x = '0'; e.vertices[1].y = '0'; });
+deveRejeitar('identificador repetido', e => (e.vertices[1].id = 'A'));
+deveRejeitar('menos de quatro vértices', e => e.vertices.pop());
+deveRejeitar('identificador vazio', e => (e.vertices[2].id = ''));
+deveRejeitar('coordenada vazia', e => (e.vertices[2].x = ''));
+deveRejeitar('coordenada fora do intervalo (1000,01)', e => (e.vertices[2].x = '1000.01'));
+deveRejeitar('coordenada negativa', e => (e.vertices[2].y = '-1'));
+deveRejeitar('coordenada com 3 casas decimais', e => (e.vertices[2].x = '3.125'));
+deveRejeitar('coordenada não numérica', e => (e.vertices[2].x = 'abc'));
+deveRejeitar('depósito inexistente', e => (e.depositoId = 'Z'));
+deveRejeitar('formigas vazio', e => (e.formigas = ''));
+deveRejeitar('formigas = 0', e => (e.formigas = '0'));
+deveRejeitar('formigas = 101', e => (e.formigas = '101'));
+deveRejeitar('formigas não inteiro (1,5)', e => (e.formigas = '1,5'));
+deveRejeitar('iterações = 201', e => (e.iteracoes = '201'));
+deveRejeitar('α = 5,1', e => (e.alpha = '5.1'));
+deveRejeitar('β negativo', e => (e.beta = '-1'));
+deveRejeitar('ρ = 91%', e => (e.rhoPercentual = '91'));
+deveRejeitar('τ₀ = 0', e => (e.tau0 = '0'));
+deveRejeitar('Q = 10.000,01', e => (e.Q = '10000.01'));
+deveRejeitar('semente não inteira', e => (e.semente = '4.2'));
+deveRejeitar('semente vazia', e => (e.semente = ''));
