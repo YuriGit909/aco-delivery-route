@@ -17,6 +17,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Colônia de Formigas – Rota de Entregas</title>
         <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/graph.css">
     </head>
 
     <body>
@@ -70,7 +71,13 @@
             </section>
 
             <section id="painelResultados">
-                <pre id="status"></pre>
+                <section id="painelResultados">
+                    <div id="avisoEscala" class="aviso" hidden></div>
+                    <svg id="grafo" role="img" aria-label="Grafo das rotas e do feromonio"></svg>
+                    <div id="legenda"></div>
+                    <pre id="painelAresta"></pre>
+                    <pre id="status"></pre>
+                </section>
             </section>
         </main>
         <footer>

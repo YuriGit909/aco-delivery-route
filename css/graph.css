@@ -1,0 +1,105 @@
+:root {
+    --cor-fundo-grafo: #fafafa;
+    --cor-aresta: #2563eb;
+    --cor-selecionada: #dc2626;
+    --cor-rota: #f59e0b;
+    --cor-vertice: #ffffff;
+    --cor-deposito: #16a34a;
+    --cor-borda: #1f2937;
+    --cor-texto: #1f2937;
+}
+
+#grafo {
+    width: 100%;
+    max-width: 600px;
+    aspect-ratio: 1;
+    background: var(--cor-fundo-grafo);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.aresta {
+    stroke: var(--cor-aresta);
+    stroke-linecap: round;
+}
+
+.aresta.selecionada {
+    stroke: var(--cor-selecionada);
+}
+
+.aresta-alvo {
+    stroke: transparent;
+    stroke-width: 14;
+    cursor: pointer;
+}
+
+.melhor-rota {
+    stroke: var(--cor-rota);
+    stroke-width: 4;
+    stroke-dasharray: 10 6;
+    pointer-events: none;
+}
+
+.vertice {
+    fill: var(--cor-vertice);
+    stroke: var(--cor-borda);
+    stroke-width: 2;
+}
+
+.vertice.deposito {
+    fill: var(--cor-deposito);
+}
+
+.rotulo {
+    fill: var(--cor-texto);
+    font: bold 13px sans-serif;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+}
+
+.aviso {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+#legenda .amostra {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+.amostra.aresta-fina {
+    width: 24px;
+    height: 1px;
+    background: var(--cor-aresta);
+    opacity: 0.3;
+}
+
+.amostra.aresta-grossa {
+    width: 24px;
+    height: 8px;
+    background: var(--cor-aresta);
+}
+
+.amostra.rota {
+    width: 24px;
+    border-top: 4px dashed var(--cor-rota);
+}
+
+.amostra.deposito {
+    width: 14px;
+    height: 14px;
+    background: var(--cor-deposito);
+    border: 2px solid var(--cor-borda);
+}
+
+.amostra.vertice {
+    width: 14px;
+    height: 14px;
+    background: var(--cor-vertice);
+    border: 2px solid var(--cor-borda);
+    border-radius: 50%;
+}

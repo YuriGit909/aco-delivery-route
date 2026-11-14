@@ -1,6 +1,7 @@
 import { Simulacao } from './simulation.js';
 import { Controlador } from './controller.js';
 import { validarEntrada } from './validation.js';
+import { VisualizacaoGrafo } from './graph.js'
 
 const $ = id => document.getElementById(id);
 
@@ -11,6 +12,11 @@ let linhas = [
     { id: 'E', x: '650', y: '880' }, { id: 'F', x: '250', y: '800' },
     { id: 'G', x: '80',  y: '480' }, { id: 'H', x: '400', y: '120' },
 ];
+
+const grafo = new VisualizacaoGrafo({
+    svg: $('grafo'), legenda: $('legenda'),
+    painelAresta: $('painelAresta'), avisoEscala: $('avisoEscala'),
+});
 
 let sim = null, ctrl = null;
 let pendente = false;
@@ -110,6 +116,7 @@ function aplicarConfiguracao() {
         ctrl = new Controlador(sim, atualizarTela);
         ctrl.definirAtraso(Number($('velocidade').value));
         pendente = false;
+        grafo.limparSelecao();
     }
     atualizarTela();
 }
@@ -120,6 +127,7 @@ function atualizarTela() {
     $('btnAvancar').disabled = !pronto || sim.concluida;
     $('btnPausar').disabled = !pronto || !ctrl.rodando;
     $('avisoPendente').hidden = !pendente;
+    grafo.render(sim);
     if (!sim) { 
         $('status').textContent = 'Corrija os erros e clique em Reiniciar.'; 
         return; 
