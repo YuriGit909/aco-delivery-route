@@ -2,6 +2,8 @@ import { criarRng } from './rng.js';
 import { matrizDistancias, matrizFeromonio, comprimentoRota, roletaSelecao, construirRota, calcularProbabilidades, atualizarFeromonio, TAU_MIN } from './aco.js';
 import { Simulacao } from './simulation.js'
 import { validarEntrada } from './validation.js'
+import { Controlador } from './controller.js'
+import { formatar } from './graph.js';
 
 // ---------- Mini framework de testes ----------
 const saida = document.getElementById('resultados');
@@ -98,9 +100,6 @@ const media = muitos.reduce((s, v) => s + v, 0) / muitos.length;
 check('Média próxima de 0,5 (distribuição uniforme)',
   Math.abs(media - 0.5) < 0.02, `média ${media.toFixed(4)}`);
 
-// ---------- Resumo ----------
-secao(`Resumo: ${passou} passaram, ${falhou} falharam`);
-
 // ---------- Probabilidades (seção 6.2) ----------
 secao('Etapa 2 – Probabilidades a partir de A (τ=1, α=1, β=2)');
 
@@ -164,7 +163,7 @@ for (let k = 0; k < 1000; k++) {
   const { rota, comprimento } = construirRota(A, tau1, d, 1, 2, rngRotas);
   const meio = rota.slice(1, -1);
   const valida = rota.length === 5 && rota[0] === A && rota[4] === A &&
-                 new Set(meio).size === 3 && !meio.includes(A);
+    new Set(meio).size === 3 && !meio.includes(A);
   if (!valida) todasValidas = false;
   if (![14, 16, 18].some(v => approx(comprimento, v))) comprimentosOk = false;
 }
@@ -230,56 +229,132 @@ const quase = matrizFeromonio(4, TAU_MIN);
 const comPiso = atualizarFeromonio(quase, [], 0.9, 14); // sem formigas → só evaporação
 check('Piso de 10⁻¹² aplicado', comPiso.log.every(e => e.final === TAU_MIN && e.pisoAplicado));
 
-  // ---------- Execução completa (seção 6.4) ----------
-  const params64 = {
-    vertices, deposito: A, formigas: 10, iteracoes: 30,
-    alpha: 1, beta: 2, rho: 0.5, tau0: 1, Q: 14, semente: 42,
-  };
-  const executarTudo = sim => { while (!sim.concluida) sim.passo(); return sim; };
-  const resumo = sim => JSON.stringify(sim.historico.map(r => r.rotas));
-  secao('Etapa 4 – Estado inicial (iteração 0)');
+// ---------- Execução completa (seção 6.4) ----------
+const params64 = {
+  vertices, deposito: A, formigas: 10, iteracoes: 30,
+  alpha: 1, beta: 2, rho: 0.5, tau0: 1, Q: 14, semente: 42,
+};
+const executarTudo = sim => { while (!sim.concluida) sim.passo(); return sim; };
+const resumo = sim => JSON.stringify(sim.historico.map(r => r.rotas));
+secao('Etapa 4 – Estado inicial (iteração 0)');
 
-  const simInicial = new Simulacao(params64);
-  check('Iteração 0', simInicial.iteracao === 0);
-  check('Melhor global "ainda não calculada" (null, não zero)', simInicial.melhorGlobal === null);
-  check('τ = 1 em todas as arestas', simInicial.tau.every((l, i) => l.every((v, j) => i === j || v === 1)));
+const simInicial = new Simulacao(params64);
+check('Iteração 0', simInicial.iteracao === 0);
+check('Melhor global "ainda não calculada" (null, não zero)', simInicial.melhorGlobal === null);
+check('τ = 1 em todas as arestas', simInicial.tau.every((l, i) => l.every((v, j) => i === j || v === 1)));
 
-  secao('Etapa 4 – Execução completa (10 formigas, 30 iterações, semente 42)');
+secao('Etapa 8 – Formato textual do log (seção 6.3)');
 
-  const sim1 = executarTudo(new Simulacao(params64));
-  check('30 registros', sim1.historico.length === 30);
-  check('Iterações numeradas de 1 a 30', sim1.historico.every((r, k) => r.iteracao === k + 1));
-  check('Todas as rotas com comprimento ∈ {14, 16, 18}',
-    sim1.historico.every(r => r.rotas.every(f => [14, 16, 18].some(v => approx(f.comprimento, v)))));
-  check('Melhor global nunca aumenta',
-    sim1.historico.every((r, k) => k === 0 ||
-      r.melhorGlobal.comprimento <= sim1.historico[k - 1].melhorGlobal.comprimento));
-  check('Cada iteração tem a construção detalhada de uma rota (3 passos)',
-    sim1.historico.every(r => r.construcaoDetalhada.length === 3));
+const textoLog = e =>
+  `anterior ${formatar(e.anterior)}; após evaporação ${formatar(e.aposEvaporacao)}; ` +
+  `depósito ${formatar(e.deposito)}; final ${formatar(e.final)}`;
 
-  const mg = sim1.melhorGlobal;
-  check(`Resultado: ${mg.rota.map(i => vertices[i].id).join(' → ')} = ${mg.comprimento} ` +
-        `(encontrada na iteração ${mg.iteracao})`, true);
+check('AB: "anterior 1; após evaporação 0,5; depósito 1; final 1,5"',
+  textoLog(eAB) === 'anterior 1; após evaporação 0,5; depósito 1; final 1,5', textoLog(eAB));
+check('AC: "anterior 1; após evaporação 0,5; depósito 0; final 0,5"',
+  textoLog(eAC) === 'anterior 1; após evaporação 0,5; depósito 0; final 0,5', textoLog(eAC));
 
-  secao('Etapa 4 – Reprodutibilidade');
+secao('Etapa 8 – Reprodutibilidade pelo controlador (pausa, avanço e velocidade)');
 
-  const sim2 = executarTudo(new Simulacao(params64));
-  check('Mesmos dados e semente → mesmo histórico', resumo(sim1) === resumo(sim2));
+function rodarViaControlador(params, { atraso, avancosIniciais = 0, pausarNa = null, novoAtraso = null }) {
+  return new Promise(resolve => {
+    const sim = new Simulacao(params);
+    let jaPausou = false;
+    const ctrl = new Controlador(sim, () => {
+      if (sim.concluida && !ctrl.rodando) return resolve(sim);
+      if (pausarNa !== null && !jaPausou && sim.iteracao === pausarNa) {
+        jaPausou = true;
+        ctrl.pausar();
+        if (novoAtraso !== null) ctrl.definirAtraso(novoAtraso);
+        setTimeout(() => ctrl.executar(), 30); // "usuário" retoma depois de um tempo
+      }
+    });
+    ctrl.definirAtraso(atraso);
+    for (let k = 0; k < avancosIniciais; k++) ctrl.avancar(); // botão "Avançar"
+    ctrl.executar();
+  });
+}
+const referencia64 = resumo(executarTudo(new Simulacao(params64)));
+const casosControlador = [
+  ['Execução contínua com atraso 0 ms', { atraso: 0 }],
+  ['Execução contínua com atraso 20 ms', { atraso: 20 }],
+  ['5 × Avançar e depois Executar', { atraso: 0, avancosIniciais: 5 }],
+  ['Pausa na iteração 10 e retomada', { atraso: 0, pausarNa: 10 }],
+  ['Pausa na iteração 10 e retomada com outra velocidade', { atraso: 0, pausarNa: 10, novoAtraso: 15 }],
+];
+for (const [nome, opcoes] of casosControlador) {
+  const s = await rodarViaControlador(params64, opcoes);
+  check(`${nome} → mesmo histórico da execução de referência`, resumo(s) === referencia64);
+}
 
-  const simPausada = new Simulacao(params64);
-  for (let k = 0; k < 12; k++) simPausada.passo();
-  executarTudo(simPausada);
-  check('Pausar e retomar → mesmo histórico', resumo(sim1) === resumo(simPausada));
+secao('Etapa 8 – Efeito de β (seção 6.5)');
 
-  sim1.reiniciar();
-  check('Reiniciar limpa o histórico e restaura τ₀',
-    sim1.historico.length === 0 && sim1.iteracao === 0 && sim1.melhorGlobal === null &&
-    sim1.tau[A][B] === 1);
-  executarTudo(sim1);
-  check('Após reiniciar → mesmo histórico', resumo(sim1) === resumo(sim2));
+const nomeRotaT = rota => rota.map(i => vertices[i].id).join(' → ');
+const relatorioBeta = [];
+const resumoBeta = [];
 
-  const simOutra = executarTudo(new Simulacao({ ...params64, semente: 43 }));
-  check('Semente diferente → histórico diferente', resumo(simOutra) !== resumo(sim2));
+for (const beta of [0, 2]) {
+  const execucoes = [1, 2, 3, 4, 5].map(semente => {
+    const s = executarTudo(new Simulacao({ ...params64, beta, semente }));
+    return {
+      semente,
+      melhor: s.melhorGlobal.comprimento,
+      iteracao: s.melhorGlobal.iteracao,
+      rota: nomeRotaT(s.melhorGlobal.rota),
+      mediaUltima: s.historico.at(-1).media,
+    };
+  });
+
+  check(`β = ${beta}: todas as melhores distâncias finais ∈ {14, 16, 18}`,
+    execucoes.every(e => [14, 16, 18].some(v => approx(e.melhor, v))));
+
+  const media = execucoes.reduce((soma, e) => soma + e.melhor, 0) / 5;
+  const atingiram = execucoes.filter(e => approx(e.melhor, 14)).length;
+  check(`β = ${beta}: média da melhor distância final = ${formatar(media)}; ${atingiram} de 5 atingiram 14`, true);
+
+  for (const e of execucoes) {
+    relatorioBeta.push(`| ${beta} | ${e.semente} | ${formatar(e.melhor)} | ${e.iteracao} | ` +
+                       `${formatar(e.mediaUltima)} | ${e.rota} |`);
+  }
+  resumoBeta.push(`| ${beta} | ${formatar(media)} | ${atingiram} de 5 |`);
+}
+
+secao('Etapa 4 – Execução completa (10 formigas, 30 iterações, semente 42)');
+
+const sim1 = executarTudo(new Simulacao(params64));
+check('30 registros', sim1.historico.length === 30);
+check('Iterações numeradas de 1 a 30', sim1.historico.every((r, k) => r.iteracao === k + 1));
+check('Todas as rotas com comprimento ∈ {14, 16, 18}',
+  sim1.historico.every(r => r.rotas.every(f => [14, 16, 18].some(v => approx(f.comprimento, v)))));
+check('Melhor global nunca aumenta',
+  sim1.historico.every((r, k) => k === 0 ||
+    r.melhorGlobal.comprimento <= sim1.historico[k - 1].melhorGlobal.comprimento));
+check('Cada iteração tem a construção detalhada de uma rota (3 passos)',
+  sim1.historico.every(r => r.construcaoDetalhada.length === 3));
+
+const mg = sim1.melhorGlobal;
+check(`Resultado: ${mg.rota.map(i => vertices[i].id).join(' → ')} = ${mg.comprimento} ` +
+  `(encontrada na iteração ${mg.iteracao})`, true);
+
+secao('Etapa 4 – Reprodutibilidade');
+
+const sim2 = executarTudo(new Simulacao(params64));
+check('Mesmos dados e semente → mesmo histórico', resumo(sim1) === resumo(sim2));
+
+const simPausada = new Simulacao(params64);
+for (let k = 0; k < 12; k++) simPausada.passo();
+executarTudo(simPausada);
+check('Pausar e retomar → mesmo histórico', resumo(sim1) === resumo(simPausada));
+
+sim1.reiniciar();
+check('Reiniciar limpa o histórico e restaura τ₀',
+  sim1.historico.length === 0 && sim1.iteracao === 0 && sim1.melhorGlobal === null &&
+  sim1.tau[A][B] === 1);
+executarTudo(sim1);
+check('Após reiniciar → mesmo histórico', resumo(sim1) === resumo(sim2));
+
+const simOutra = executarTudo(new Simulacao({ ...params64, semente: 43 }));
+check('Semente diferente → histórico diferente', resumo(simOutra) !== resumo(sim2));
 
 // ---------- Validação (seção 6.5) ----------
 secao('Etapa 5 – Validação de entradas');
@@ -326,3 +401,34 @@ deveRejeitar('τ₀ = 0', e => (e.tau0 = '0'));
 deveRejeitar('Q = 10.000,01', e => (e.Q = '10000.01'));
 deveRejeitar('semente não inteira', e => (e.semente = '4.2'));
 deveRejeitar('semente vazia', e => (e.semente = ''));
+
+// ---------- Relatório em Markdown para o README ----------
+const sim64 = executarTudo(new Simulacao(params64));
+const mg64 = sim64.melhorGlobal;
+
+const relatorio = [
+  '### 6.4 Execução completa (semente 42)',
+  '',
+  `Melhor rota: ${nomeRotaT(mg64.rota)}, comprimento ${formatar(mg64.comprimento)}, ` +
+  `encontrada na iteração ${mg64.iteracao}. Registros: ${sim64.historico.length}.`,
+  '',
+  '| Iteração | Menor da iteração | Média | Melhor acumulada |',
+  '|---|---|---|---|',
+  ...sim64.historico.map(r =>
+    `| ${r.iteracao} | ${formatar(r.melhorIteracao.comprimento)} | ${formatar(r.media)} | ` +
+    `${formatar(r.melhorGlobal.comprimento)} |`),
+  '',
+  '### 6.5 Efeito de β (sementes 1 a 5)',
+  '',
+  '| β | Semente | Melhor distância final | Iteração em que foi encontrada | Média das formigas na última iteração | Melhor rota |',
+  '|---|---|---|---|---|---|',
+  ...relatorioBeta,
+  '',
+  '| β | Média da melhor distância final | Execuções que atingiram 14 |',
+  '|---|---|---|',
+  ...resumoBeta,
+];
+document.getElementById('relatorio').textContent = relatorio.join('\n');
+
+// ---------- Resumo ----------
+secao(`Resumo: ${passou} passaram, ${falhou} falharam`);
