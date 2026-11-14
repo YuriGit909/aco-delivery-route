@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
@@ -18,6 +18,7 @@
         <title>Colônia de Formigas – Rota de Entregas</title>
         <link rel="stylesheet" href="css/style.css">
         <link rel="stylesheet" href="css/graph.css">
+        <link rel="stylesheet" href="css/panels.css">
     </head>
 
     <body>
@@ -76,7 +77,63 @@
                     <svg id="grafo" role="img" aria-label="Grafo das rotas e do feromonio"></svg>
                     <div id="legenda"></div>
                     <pre id="painelAresta"></pre>
-                    <pre id="status"></pre>
+                    <section id="metricas">
+                        <h2>Métricas</h2>
+                        <dl id="listaMetricas"></dl>
+                    </section>
+
+                    <details open>
+                        <summary>Histórico por iteração</summary>
+                        <div class="legenda-grafico">
+                            <span class="amostra serie-menor"></span> Menor da iteração
+                            <span class="amostra serie-media"></span> Média da iteração
+                            <span class="amostra serie-global"></span> Melhor acumulada
+                        </div>
+                        <svg id="graficoHistorico" role="img" aria-label="Evolução das distâncias por iteração"></svg>
+                        <div class="tabela-rolavel">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Iteração</th>
+                                        <th>Menor da iteração</th>
+                                        <th>Média</th>
+                                        <th>Melhor acumulada</th>
+                                        <th>Melhor rota da iteração</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaHistorico"></tbody>
+                            </table>
+                        </div>
+                    </details>
+
+                    <h2>Logs</h2>
+                    <label>Exibir logs da: <select id="iteracaoLog"></select></label>
+
+                    <details>
+                        <summary>Construção passo a passo de uma rota</summary>
+                        <pre id="logConstrucao"></pre>
+                    </details>
+                    <details>
+                        <summary>Rotas e comprimentos de todas as formigas</summary>
+                        <pre id="logRotas"></pre>
+                    </details>
+                    <details>
+                        <summary>Atualização do feromônio por aresta</summary>
+                        <div class="tabela-rolavel">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Aresta</th>
+                                        <th>Anterior</th>
+                                        <th>Após evaporação</th>
+                                        <th>Depósito total</th>
+                                        <th>Final</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logFeromonio"></tbody>
+                            </table>
+                        </div>
+                    </details>
                 </section>
             </section>
         </main>

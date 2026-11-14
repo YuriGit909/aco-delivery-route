@@ -1,0 +1,102 @@
+#listaMetricas {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 1rem;
+}
+
+#listaMetricas dt {
+    font-weight: bold;
+}
+
+#listaMetricas dd {
+    margin: 0;
+}
+
+.tabela-rolavel {
+    max-height: 320px;
+    overflow: auto;
+}
+
+.tabela-rolavel table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.tabela-rolavel th,
+.tabela-rolavel td {
+    border: 1px solid #ddd;
+    padding: 0.25rem 0.5rem;
+    text-align: right;
+}
+
+.tabela-rolavel th {
+    position: sticky;
+    top: 0;
+    background: #f3f4f6;
+}
+
+tr.recebeu-deposito {
+    background: #dbeafe;
+}
+
+#graficoHistorico {
+    width: 100%;
+    max-width: 600px;
+}
+
+.eixo {
+    fill: none;
+    stroke: #9ca3af;
+}
+
+.serie {
+    fill: none;
+    stroke-width: 2;
+}
+
+.serie-menor {
+    stroke: #2563eb;
+}
+
+.serie-media {
+    stroke: #9ca3af;
+    stroke-dasharray: 4 3;
+}
+
+.serie-global {
+    stroke: #f59e0b;
+}
+
+.texto-grafico {
+    font: 11px sans-serif;
+    fill: #374151;
+}
+
+.legenda-grafico .amostra {
+    display: inline-block;
+    width: 20px;
+    height: 0;
+    vertical-align: middle;
+    margin: 0 4px 0 12px;
+    border-top-width: 3px;
+    border-top-style: solid;
+}
+
+.legenda-grafico .amostra.serie-menor {
+    border-top-color: #2563eb;
+}
+
+.legenda-grafico .amostra.serie-media {
+    border-top-color: #9ca3af;
+    border-top-style: dashed;
+}
+
+.legenda-grafico .amostra.serie-global {
+    border-top-color: #f59e0b;
+}
+
+pre {
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+}

@@ -2,6 +2,7 @@ import { Simulacao } from './simulation.js';
 import { Controlador } from './controller.js';
 import { validarEntrada } from './validation.js';
 import { VisualizacaoGrafo } from './graph.js'
+import { renderHistorico, renderLogs, renderMetricas  } from './panels.js'
 
 const $ = id => document.getElementById(id);
 
@@ -127,15 +128,11 @@ function atualizarTela() {
     $('btnAvancar').disabled = !pronto || sim.concluida;
     $('btnPausar').disabled = !pronto || !ctrl.rodando;
     $('avisoPendente').hidden = !pendente;
+    
     grafo.render(sim);
-    if (!sim) { 
-        $('status').textContent = 'Corrija os erros e clique em Reiniciar.'; 
-        return; 
-    }
-    const mg = sim.melhorGlobal;
-    const nome = rota => rota.map(i => sim.params.vertices[i].id).join(' → ');
-    $('status').textContent = `Iteração: ${sim.iteracao}/${sim.params.iteracoes}\n` +
-    `Melhor: ${mg ? `${nome(mg.rota)} = ${mg.comprimento.toFixed(2)}` : 'ainda não calculada'}`;
+    renderMetricas(sim, ctrl);
+    renderHistorico(sim);
+    renderLogs(sim);
 }
 
 $('btnAdicionar').onclick = () => {
@@ -163,6 +160,7 @@ $('btnPausar').onclick = () => ctrl.pausar();
 $('btnAvancar').onclick = () => ctrl.avancar();
 $('btnReiniciar').onclick = aplicarConfiguracao;
 $('velocidade').oninput = e => ctrl?.definirAtraso(Number(e.target.value));
+$('iteracaoLog').addEventListener('change', () => renderLogs(sim));
 
 renderTabelaVertices();
 aplicarConfiguracao();
