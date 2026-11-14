@@ -103,3 +103,88 @@
     border: 2px solid var(--cor-borda);
     border-radius: 50%;
 }
+
+#grafo {
+    display: block;
+    max-width: min(600px, 100%);
+    height: auto;
+}
+
+.mesa {
+    container-type: inline-size;
+}
+
+.vertice {
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.aviso {
+    color: #1f2937;
+}
+
+#legenda {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.75rem 0;
+    font-size: 0.92rem;
+}
+
+#legenda > div {
+    overflow-wrap: anywhere;
+}
+
+#painelAresta {
+    margin: 0 0 1rem;
+    padding: 0.6rem 0.8rem;
+    background: var(--cor-fundo-grafo);
+    color: var(--cor-texto);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow-wrap: anywhere;
+}
+
+@container (max-width: 480px) {
+    #grafo {
+        border-radius: 6px;
+    }
+
+    #grafo .vertice {
+        transform: scale(1.35);
+    }
+
+    #grafo .rotulo {
+        font-size: 17px;
+    }
+
+    #grafo .aresta,
+    #grafo .melhor-rota,
+    #grafo .aresta-alvo {
+        vector-effect: non-scaling-stroke;
+    }
+
+    #grafo .melhor-rota {
+        stroke-width: 3;
+        stroke-dasharray: 7 4;
+    }
+
+    #legenda {
+        font-size: 0.88rem;
+    }
+}
+
+@container (max-width: 360px) {
+    #grafo .vertice {
+        transform: scale(1.65);
+    }
+
+    #grafo .rotulo {
+        font-size: 21px;
+    }
+}
+
+@media (pointer: coarse) {
+    #grafo .aresta-alvo {
+        stroke-width: 24;
+    }
+}

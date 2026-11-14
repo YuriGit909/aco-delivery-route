@@ -1,0 +1,326 @@
+:root {
+  --papel: #eef1ec;
+  --painel: #e1e7e0;
+  --campo: #fbfcfa;
+  --tinta: #1f2a44;
+  --tinta-suave: #55607a;
+  --grade-forte: #b9c9d1;
+  --destaque: #b7791f;
+  --destaque-fundo: #f3e3c3;
+  --erro: #9f1239;
+  --erro-fundo: #f9e3e8;
+  --fonte: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --raio: 4px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #1a2030;
+    --painel: #222a3c;
+    --campo: #283149;
+    --tinta: #e3e7ef;
+    --tinta-suave: #9aa4b8;
+    --grade-forte: #3a4562;
+    --destaque: #e0a640;
+    --destaque-fundo: #3a3222;
+    --erro: #f38ba8;
+    --erro-fundo: #3b2230;
+    color-scheme: dark;
+  }
+}
+
+/* Base */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font: 1rem/1.55 var(--fonte);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--tinta);
+  text-decoration-color: var(--destaque);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+a:hover { color: var(--destaque); }
+
+h2 {
+  font-size: 1.2rem;
+  line-height: 1.3;
+  margin: 2rem 0 0.6rem;
+}
+
+/* Cabeçalho */
+header {
+  padding: 1.75rem clamp(1rem, 3vw, 2.5rem) 1rem;
+}
+
+header h1 {
+  margin: 0;
+  max-width: 22ch;
+  font-size: clamp(1.6rem, 1.1rem + 2vw, 2.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  padding-bottom: 0.7rem;
+  background:
+    radial-gradient(circle, var(--destaque) 1.6px, transparent 2.2px)
+    left bottom / 11px 7px repeat-x;
+}
+
+header p {
+  margin: 0.8rem 0 0;
+  max-width: 62ch;
+  color: var(--tinta-suave);
+}
+
+/* Estrutura geral */
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 0.5rem clamp(1rem, 3vw, 2.5rem) 2.5rem;
+}
+
+@media (min-width: 960px) {
+  main {
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+    align-items: start;
+    gap: 2.25rem;
+  }
+  #painelConfig {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+  }
+}
+
+#painelResultados { min-width: 0; }
+
+/* Grafo e coluna de leitura (legenda, aresta, métricas) */
+.mesa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+.leitura { min-width: 0; }
+
+@media (min-width: 1280px) {
+  .mesa {
+    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 1fr);
+    align-items: start;
+    gap: 1.75rem;
+  }
+}
+
+/* Coluna de configuração */
+#painelConfig {
+  background: var(--painel);
+  border-radius: 6px;
+  padding: 1.25rem 1.25rem 0;
+}
+
+fieldset {
+  border: 0;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  min-width: 0;
+}
+
+legend {
+  padding: 0;
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+/* Campos */
+input,
+select {
+  font: inherit;
+  color: inherit;
+  background: var(--campo);
+  border: 1px solid var(--grade-forte);
+  border-radius: var(--raio);
+  padding: 0.35rem 0.5rem;
+  min-width: 0;
+}
+input:hover,
+select:hover { border-color: var(--tinta-suave); }
+
+input[type="range"] {
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: var(--destaque);
+}
+
+/* Parâmetros: rótulo à esquerda, campo alinhado à direita */
+fieldset > label {
+  display: grid;
+  grid-template-columns: 1fr 6.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px dotted var(--grade-forte);
+  font-size: 0.95rem;
+}
+fieldset > label:last-child { border-bottom: 0; }
+fieldset > label input,
+fieldset > label select { width: 100%; text-align: right; }
+fieldset > label select { text-align: left; }
+
+/* Tabela de vértices */
+#painelConfig table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.5rem;
+}
+#painelConfig th {
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  padding: 0 0.2rem 0.3rem;
+}
+#painelConfig td { padding: 0.15rem 0.2rem; }
+#painelConfig th:first-child { width: 26%; }
+#painelConfig th:nth-child(2),
+#painelConfig th:nth-child(3) { width: 30%; }
+#tabelaVertices input {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Botões */
+button {
+  font: inherit;
+  cursor: pointer;
+  color: var(--tinta);
+  background: transparent;
+  border: 1.5px solid var(--tinta);
+  border-radius: var(--raio);
+  padding: 0.45rem 0.85rem;
+  line-height: 1.2;
+}
+button:hover:not(:disabled) {
+  background: var(--tinta);
+  color: var(--papel);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#btnExecutar {
+  background: var(--tinta);
+  color: var(--papel);
+}
+#btnExecutar:hover:not(:disabled) {
+  background: var(--destaque);
+  border-color: var(--destaque);
+  color: #1f2a44;
+}
+
+#btnAdicionar,
+#btnInstanciaTeste {
+  font-size: 0.9rem;
+  padding: 0.35rem 0.7rem;
+  border-style: dashed;
+  margin: 0.25rem 0.25rem 0.75rem 0;
+}
+
+/* "Remover" na tabela: ação discreta */
+#tabelaVertices button {
+  border-color: transparent;
+  color: var(--tinta-suave);
+  font-size: 0.85rem;
+  padding: 0.25rem 0.35rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#tabelaVertices button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--erro);
+}
+
+#controles {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 -1.25rem;
+  padding: 0.9rem 1.25rem 1.25rem;
+  background: var(--painel);
+  border-top: 1px solid var(--grade-forte);
+}
+#controles label {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  font-size: 0.92rem;
+  color: var(--tinta-suave);
+}
+#velocidade { flex: 1; }
+
+/* Avisos e erros da configuração */
+#avisoPendente {
+  background: var(--destaque-fundo);
+  border-left: 3px solid var(--destaque);
+  padding: 0.55rem 0.8rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.93rem;
+}
+
+#listaErros {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--erro-fundo);
+  color: var(--erro);
+  border-left: 3px solid var(--erro);
+  font-size: 0.92rem;
+}
+#listaErros:empty { display: none; }
+#listaErros li + li { margin-top: 0.3rem; }
+
+/* Rodapé */
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1.75rem;
+  padding: 1.25rem clamp(1rem, 3vw, 2.5rem) 2rem;
+  border-top: 1px solid var(--grade-forte);
+  font-size: 0.95rem;
+}
+
+/* Telas estreitas */
+@media (max-width: 600px) {
+  fieldset > label { grid-template-columns: 1fr 5.5rem; }
+  #controles button { flex: 1 1 auto; }
+  #painelConfig { padding: 1rem 1rem 0; }
+  #controles { margin: 0 -1rem; padding: 0.8rem 1rem 1rem; }
+}
+
+/* Movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
